@@ -102,7 +102,8 @@ cd Infrastructure/
 ```
 
 **3.** Run Terraform init to download the providers and install the modules
-```terraform
+
+```shell
 terraform init 
 ```
 **4.** Run the terraform plan command, feel free to use a tfvars file to specify the variables.
@@ -114,19 +115,19 @@ You need to set at least the followign variables:
 + **repository_name** = your GitHub repository name
 + **repository_owner** = the owner of the GitHub repository used
 
-```terraform
-terraform plan -var aws_profile="your-profile" -var aws_region="your-region" -var environment_name="your-env" -var github_token="your-personal-token"
+```shell
+terraform plan -var aws_profile="your-profile" -var aws_region="your-region" -var environment_name="your-env" -var github_token="your-personal-token" -var repository_name="your-github-repository" - var repository_owner="the-github-repository-owner"
 ```
 
 Example of the previous command with replaced dummy values:
 
-```terraform
+```shell
 terraform plan -var aws_profile="development" -var aws_region="eu-central-1" -var environment_name="developmentenv" -var github_token="your-personal-token" -var repository_name="your-github-repository" - var repository_owner="the-github-repository-owner"
 ```
  
 **5.** Review the terraform plan, take a look at the changes that terraform will execute:
 
-```terraform
+```shell
 terraform apply -var aws_profile="your-profile" -var aws_region="your-region" -var environment_name="your-env" -var github_token="your-personal-token" -var repository_name="your-github-repository" - var repository_owner="the-github-repository-owner"
 ```
 
@@ -167,6 +168,7 @@ The application folder structure is separeted in components, views and services,
 1) The assets used by the client application are going to be requested from the S3 bucket created with this code. Please add 3 images to the created S3 bucket.
 
 2) The Dynamodb structure used by the client application is the following one:
+
 ```shell
   - id: N (HASH)
   - path: S
@@ -207,7 +209,7 @@ The server exposes 3 endpoints:
 
 Run the following command if you want to delete all the resources created before:
 
-```terraform
+```shell
 terraform destroy -var aws_profile="your-profile" -var AWS_REGION="your-region" -var environment_name="your-env" -var github_token="your-personal-token" -var repository_name="your-github-repository" - var repository_owner="the-github-repository-owner"
 ```
 
