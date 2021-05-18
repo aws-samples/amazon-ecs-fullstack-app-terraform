@@ -38,8 +38,8 @@ The Infrastructure folder contains the terraform code to deploy the AWS resource
 
 - AWS Networking resources, following best practices for HA
 - 2 ECR Repositories
-- 2 ECS Cluster
-- 2 ECS Service
+- 1 ECS Cluster
+- 2 ECS Services
 - 2 Task definitions
 - 4 Autoscaling Policies + Cloudwatch Alarms
 - 2 Application Load Balancer (Public facing)
