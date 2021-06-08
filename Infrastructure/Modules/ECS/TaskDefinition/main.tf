@@ -14,10 +14,6 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
-  tags = {
-    Created_by = "Terraform"
-  }
-
   container_definitions = <<DEFINITION
     [
       {
@@ -49,8 +45,4 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
 resource "aws_cloudwatch_log_group" "TaskDF-Log_Group" {
   name              = "/ecs/task-definition-${var.name}"
   retention_in_days = 30
-
-  tags = {
-    Created_by = "Terraform"
-  }
 }

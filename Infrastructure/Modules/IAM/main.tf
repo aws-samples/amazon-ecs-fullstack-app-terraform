@@ -25,8 +25,7 @@ resource "aws_iam_role" "ecs_task_excecution_role" {
 }
 EOF
   tags = {
-    Name       = var.name
-    Created_by = "Terraform"
+    Name = var.name
   }
 
   lifecycle {
@@ -53,8 +52,7 @@ resource "aws_iam_role" "ecs_task_role" {
 }
 EOF
   tags = {
-    Name       = var.name_ecs_task_role
-    Created_by = "Terraform"
+    Name = var.name_ecs_task_role
   }
 
   lifecycle {
@@ -85,8 +83,7 @@ resource "aws_iam_role" "devops_role" {
 }
 EOF
   tags = {
-    Name       = var.name
-    Created_by = "Terraform"
+    Name = var.name
   }
   lifecycle {
     create_before_destroy = true
@@ -111,9 +108,7 @@ resource "aws_iam_role" "codedeploy_role" {
   ]
 }
 EOF
-  tags = {
-    Created_by = "Terraform"
-  }
+
 }
 
 # ------- IAM Policies -------
@@ -126,10 +121,6 @@ resource "aws_iam_policy" "policy_for_role" {
   lifecycle {
     create_before_destroy = true
   }
-
-  tags = {
-    Created_by = "Terraform"
-  }
 }
 
 resource "aws_iam_policy" "policy_for_ecs_task_role" {
@@ -140,10 +131,6 @@ resource "aws_iam_policy" "policy_for_ecs_task_role" {
 
   lifecycle {
     create_before_destroy = true
-  }
-
-  tags = {
-    Created_by = "Terraform"
   }
 }
 

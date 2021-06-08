@@ -79,9 +79,6 @@ resource "aws_cloudwatch_metric_alarm" "high-memory-policy-alarm" {
     "ClusterName" = var.cluster_name
   }
 
-  tags = {
-    Created_by = "Terraform"
-  }
 }
 
 # ------- High CPU alarm -------
@@ -101,7 +98,4 @@ resource "aws_cloudwatch_metric_alarm" "high-cpu-policy-alarm" {
     "ClusterName" = var.cluster_name
   }
 
-  tags = {
-    Created_by = "Terraform"
-  }
 }

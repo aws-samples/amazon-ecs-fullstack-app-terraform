@@ -19,7 +19,4 @@ resource "aws_dynamodb_table" "dynamodb_table" {
     }
   }
 
-  tags = {
-    Created_by = "Terraform"
-  }
 }

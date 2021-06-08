@@ -33,7 +33,4 @@ resource "aws_ecs_service" "ecs_service" {
     ignore_changes = [desired_count, task_definition, load_balancer]
   }
 
-  tags = {
-    Created_by = "Terraform"
-  }
 }
