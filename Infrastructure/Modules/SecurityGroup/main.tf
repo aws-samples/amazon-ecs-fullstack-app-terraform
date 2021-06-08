@@ -25,7 +25,6 @@ resource "aws_security_group" "sg" {
   }
 
   tags = {
-    Name       = var.name
-    Created_by = "Terraform"
+    Name = var.name
   }
 }

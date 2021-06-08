@@ -10,7 +10,6 @@ resource "aws_s3_bucket" "s3_bucket" {
   acl           = "private"
   force_destroy = true
   tags = {
-    Name       = var.bucket_name
-    Created_by = "Terraform"
+    Name = var.bucket_name
   }
 }

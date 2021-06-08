@@ -7,8 +7,4 @@
 
 resource "aws_sns_topic" "sns_notifications" {
   name = var.sns_name
-
-  tags = {
-    Created_by = "Terraform"
-  }
 }

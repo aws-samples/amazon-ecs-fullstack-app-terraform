@@ -14,10 +14,6 @@ resource "aws_alb" "alb" {
   internal           = false
   enable_http2       = true
   idle_timeout       = 30
-
-  tags = {
-    Created_by = "Terraform"
-  }
 }
 
 # ------- ALB Listenet for HTTPS -------
@@ -80,9 +76,5 @@ resource "aws_alb_target_group" "target_group" {
 
   lifecycle {
     create_before_destroy = true
-  }
-
-  tags = {
-    Created_by = "Terraform"
   }
 }

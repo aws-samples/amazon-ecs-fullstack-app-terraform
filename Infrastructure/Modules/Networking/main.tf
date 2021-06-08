@@ -12,8 +12,7 @@ resource "aws_vpc" "aws_vpc" {
   enable_dns_hostnames = true
   enable_dns_support   = true
   tags = {
-    Name       = "vpc_${var.name}"
-    Created_by = "Terraform"
+    Name = "vpc_${var.name}"
   }
 }
 
@@ -32,8 +31,7 @@ resource "aws_subnet" "public_subnets" {
   cidr_block              = cidrsubnet(aws_vpc.aws_vpc.cidr_block, 7, count.index + 1)
   map_public_ip_on_launch = true
   tags = {
-    Name       = "public_subnet_${count.index}_${var.name}"
-    Created_by = "Terraform"
+    Name = "public_subnet_${count.index}_${var.name}"
   }
 }
 
@@ -44,8 +42,7 @@ resource "aws_subnet" "private_subnets_client" {
   vpc_id            = aws_vpc.aws_vpc.id
   cidr_block        = cidrsubnet(aws_vpc.aws_vpc.cidr_block, 7, count.index + 3)
   tags = {
-    Name       = "private_subnet_client_${count.index}_${var.name}"
-    Created_by = "Terraform"
+    Name = "private_subnet_client_${count.index}_${var.name}"
   }
 }
 
@@ -55,8 +52,7 @@ resource "aws_subnet" "private_subnets_server" {
   vpc_id            = aws_vpc.aws_vpc.id
   cidr_block        = cidrsubnet(aws_vpc.aws_vpc.cidr_block, 7, count.index + 5)
   tags = {
-    Name       = "private_subnet_server_${count.index}_${var.name}"
-    Created_by = "Terraform"
+    Name = "private_subnet_server_${count.index}_${var.name}"
   }
 }
 
@@ -64,8 +60,7 @@ resource "aws_subnet" "private_subnets_server" {
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.aws_vpc.id
   tags = {
-    Name       = "igw_${var.name}"
-    Created_by = "Terraform"
+    Name = "igw_${var.name}"
   }
 }
 
@@ -80,8 +75,7 @@ resource "aws_default_route_table" "rt_public" {
   }
 
   tags = {
-    Name       = "public_rt_${var.name}"
-    Created_by = "Terraform"
+    Name = "public_rt_${var.name}"
   }
 }
 
@@ -89,8 +83,7 @@ resource "aws_default_route_table" "rt_public" {
 resource "aws_eip" "eip" {
   vpc = true
   tags = {
-    Name       = "eip-${var.name}"
-    Created_by = "Terraform"
+    Name = "eip-${var.name}"
   }
 }
 
@@ -99,8 +92,7 @@ resource "aws_nat_gateway" "natgw" {
   allocation_id = aws_eip.eip.id
   subnet_id     = aws_subnet.public_subnets[0].id
   tags = {
-    Name       = "nat_${var.name}"
-    Created_by = "Terraform"
+    Name = "nat_${var.name}"
   }
 }
 
@@ -115,8 +107,7 @@ resource "aws_route_table" "rt_private" {
   }
 
   tags = {
-    Name       = "private_rt_${var.name}"
-    Created_by = "Terraform"
+    Name = "private_rt_${var.name}"
   }
 }
 
