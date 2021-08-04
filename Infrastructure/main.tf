@@ -18,6 +18,17 @@ provider "aws" {
   }
 }
 
+# ------------------- Configure remote state backend------------------------
+terraform {
+  backend "remote" {
+    organization = "Sealnet-UK"
+
+    workspaces {
+      name = "aws-tfstate"
+    }
+  }
+}
+
 # ------- Random numbers intended to be used as unique identifiers for resources -------
 resource "random_id" "RANDOM_ID" {
   byte_length = "2"
