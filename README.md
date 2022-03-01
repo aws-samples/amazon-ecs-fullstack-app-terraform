@@ -95,7 +95,7 @@ Before launching the solution please follow the next steps:
 
 **1.** Fork this repository and create the GitHub token granting access to this new repository in your account.
 
-**2.** Clone this repository and change the directory to the appropriate one:
+**2.** Clone that recently forked repository from your account (not the one from the aws-sample organization) and change the directory to the appropriate one as shown below:
 
 ```bash
 cd Infrastructure/
