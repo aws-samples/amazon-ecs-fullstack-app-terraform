@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT-0
 
 # build stage
-FROM public.ecr.aws/bitnami/node:latest as build-stage
+FROM public.ecr.aws/bitnami/node:16 as build-stage
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
