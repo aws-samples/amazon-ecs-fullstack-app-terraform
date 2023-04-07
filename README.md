@@ -49,7 +49,7 @@ The Infrastructure folder contains the terraform code to deploy the AWS resource
 - 2 CodeDeploy Applications
 - 1 CodePipeline pipeline
 - 2 S3 Buckets (1 used by CodePipeline to store the artifacts and another one used to store assets accessible from within the application)
-- 1 Dynamodb table (used by the application)
+- 1 DynamoDB table (used by the application)
 - 1 SNS topic for notifications
 
 ## Infrastructure Architecture
@@ -167,18 +167,18 @@ The application folder structure is separeted in components, views and services,
 ### Client considerations due to demo proposals
 1) The assets used by the client application are going to be requested from the S3 bucket created with this code. Please add 3 images to the created S3 bucket.
 
-2) The Dynamodb structure used by the client application is the following one:
+2) The DynamoDB structure used by the client application is the following one:
 
 ```shell
   - id: N (HASH)
   - path: S
   - title: S
 ```
-Feel free to change the structure as needed. But in order to have full demo experience, please add 3 Dynamodb Items with the specified structure from above. Below is an example.
+Feel free to change the structure as needed. But in order to have full demo experience, please add 3 DynamoDB Items with the specified structure from above. Below is an example.
 
 *Note: The path attribute correspondes to the S3 Object URL of each added asset from the previous step.*
 
-Example of a Dynamodb Item:
+Example of a DynamoDB Item:
 
 ```json
 {
@@ -202,7 +202,7 @@ Swagger was also implemented in order to document the APIs. The Swagger endpoint
 
 The server exposes 3 endpoints:
 - /status: serves as a dummy endpoint to know if the server is up and running. This one is used as the health check endpoint by the AWS ECS resources
-- /api/getAllProducts: main endpoint, which returns all the Items from an AWS Dynamodb table
+- /api/getAllProducts: main endpoint, which returns all the Items from an AWS DynamoDB table
 - /api/docs: the Swagger enpoint for the API documentation
 
 ## Cleanup
