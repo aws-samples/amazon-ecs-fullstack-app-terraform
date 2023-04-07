@@ -203,7 +203,7 @@ Swagger was also implemented in order to document the APIs. The Swagger endpoint
 The server exposes 3 endpoints:
 - /status: serves as a dummy endpoint to know if the server is up and running. This one is used as the health check endpoint by the AWS ECS resources
 - /api/getAllProducts: main endpoint, which returns all the Items from an AWS DynamoDB table
-- /api/docs: the Swagger enpoint for the API documentation
+- /api/docs: the Swagger endpoint for the API documentation
 
 ## Cleanup
 
