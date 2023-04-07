@@ -49,7 +49,7 @@ The Infrastructure folder contains the terraform code to deploy the AWS resource
 - 2 CodeDeploy Applications
 - 1 CodePipeline pipeline
 - 2 S3 Buckets (1 used by CodePipeline to store the artifacts and another one used to store assets accessible from within the application)
-- 1 Dynamodb table (used by the application)
+- 1 DynamoDB table (used by the application)
 - 1 SNS topic for notifications
 
 ## Infrastructure Architecture
@@ -65,7 +65,7 @@ The task definition template (Infrastructure/Templates/taskdef.json) that enable
 
 Feel free to change it, by adding for example a set of "sed" commands in CodeBuild (following the ones already provided as example) to replace the values dynamically.
 
-Feel fre to create a subscriptor for the SNS topic created by this code, in order to get informed of the status of each finished CodeDeploy deployment.
+Feel free to create a subscriptor for the SNS topic created by this code, in order to get informed of the status of each finished CodeDeploy deployment.
 
 ## CI/CD Architecture
 
@@ -107,7 +107,7 @@ cd Infrastructure/
 terraform init 
 ```
 **4.** Run the terraform plan command, feel free to use a tfvars file to specify the variables.
-You need to set at least the followign variables:
+You need to set at least the following variables:
 + **aws_profile** = according to the profiles name in ~/.aws/credentials
 + **aws_region** = the AWS region in which you want to create the resources
 + **environment_name** = a unique name used for concatenation to give place to the resources names
@@ -131,9 +131,9 @@ terraform plan -var aws_profile="development" -var aws_region="eu-central-1" -va
 terraform apply -var aws_profile="your-profile" -var aws_region="your-region" -var environment_name="your-env" -var github_token="your-personal-token" -var repository_name="your-github-repository" -var repository_owner="the-github-repository-owner"
 ```
 
-**6.** Once Terraform finishes the deployment open the AWS Management Console and go to the AWS CodePipeline service. You will see that the pipeline, which was created by this Terraform code, is in progress. Add some files and Dynamodb items as mentioned [here](#client-considerations-due-to-demo-proposals). Once the pipeline finished successfully and the before assets were added, go back to the console where Terraform was executed, copy the *application_url* value from the output and open it in a browser.
+**6.** Once Terraform finishes the deployment, open the AWS Management Console and go to the AWS CodePipeline service. You will see that the pipeline, which was created by this Terraform code, is in progress. Add some files and DynamoDB items as mentioned [here](#client-considerations-due-to-demo-proposals). Once the pipeline finished successfully and the before assets were added, go back to the console where Terraform was executed, copy the *application_url* value from the output and open it in a browser.
 
-**7.** In order to access the also implemented Swagger endpoint copy the *swagger_endpoint* value from the Terraform output and open it in a browser.
+**7.** In order to access the also implemented Swagger endpoint, copy the *swagger_endpoint* value from the Terraform output and open it in a browser.
 
 ## Autoscaling test
 
@@ -141,9 +141,9 @@ To test how your application will perform under a peak of traffic, a stress test
 
 For this stress test [Artillery](https://artillery.io/) is being used. Please be sure to install it following [these](https://artillery.io/docs/guides/getting-started/installing-artillery.html) steps.
 
-Once installed please change the ALB DNS to the desired layer to test (front-/backend) in the **target** attribute, which you can copy from the generated Terraform output, or you can also search it in the AWS Management Console.
+Once installed, please change the ALB DNS to the desired layer to test (front/backend) in the **target** attribute, which you can copy from the generated Terraform output, or you can also search it in the AWS Management Console.
 
-To execute it run the following commands:
+To execute it, run the following commands:
 
 *Frontend layer:*
 ```bash
@@ -155,7 +155,7 @@ artillery run Code/client/src/tests/stresstests/stress_client.yml
 artillery run Code/server/src/tests/stresstests/stress_server.yml
 ```
 
-To learn more about Amazon ECS Autoscaling please take a look to [this](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/service-auto-scaling.html) documentation.
+To learn more about Amazon ECS Autoscaling, please take a look to [this](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/service-auto-scaling.html) documentation.
 ## Application Code
 
 ### Client app
@@ -167,18 +167,18 @@ The application folder structure is separeted in components, views and services,
 ### Client considerations due to demo proposals
 1) The assets used by the client application are going to be requested from the S3 bucket created with this code. Please add 3 images to the created S3 bucket.
 
-2) The Dynamodb structure used by the client application is the following one:
+2) The DynamoDB structure used by the client application is the following one:
 
 ```shell
   - id: N (HASH)
   - path: S
   - title: S
 ```
-Feel free to change the structure as needed. But in order to have full demo experience, please add 3 Dynamodb Items with the specified structure from above. Below is an example.
+Feel free to change the structure as needed. But in order to have full demo experience, please add 3 DynamoDB Items with the specified structure from above. Below is an example.
 
 *Note: The path attribute correspondes to the S3 Object URL of each added asset from the previous step.*
 
-Example of a Dynamodb Item:
+Example of a DynamoDB Item:
 
 ```json
 {
@@ -202,8 +202,8 @@ Swagger was also implemented in order to document the APIs. The Swagger endpoint
 
 The server exposes 3 endpoints:
 - /status: serves as a dummy endpoint to know if the server is up and running. This one is used as the health check endpoint by the AWS ECS resources
-- /api/getAllProducts: main endpoint, which returns all the Items from an AWS Dynamodb table
-- /api/docs: the Swagger enpoint for the API documentation
+- /api/getAllProducts: main endpoint, which returns all the Items from an AWS DynamoDB table
+- /api/docs: the Swagger endpoint for the API documentation
 
 ## Cleanup
 
