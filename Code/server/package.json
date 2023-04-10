@@ -15,7 +15,7 @@
   ],
   "dependencies": {
     "artillery": "^1.6.2",
-    "aws-sdk": "^2.876.0",
+    "aws-sdk": "^2.1354.0",
     "cors": "^2.8.5",
     "express": "^4.16.4",
     "swagger-jsdoc": "6.0.0",
