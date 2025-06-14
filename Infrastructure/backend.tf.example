@@ -1,0 +1,29 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+# Backend configuration for Terraform state storage with DynamoDB locking
+# 
+# INSTRUCTIONS:
+# 1. First deploy the state-backend infrastructure to create the S3 bucket and DynamoDB table
+# 2. Copy this file to backend.tf (remove .example extension)
+# 3. Replace the placeholder values below with the actual values from the state-backend outputs
+# 4. Run 'terraform init' to migrate your state to the remote backend
+
+terraform {
+  backend "s3" {
+    # Replace with your actual S3 bucket name from state-backend output
+    bucket = "terraform-state-YOUR_ENVIRONMENT-XXXXXXXX"
+    
+    # State file path within the bucket
+    key = "infrastructure/terraform.tfstate"
+    
+    # Replace with your AWS region
+    region = "us-east-1"
+    
+    # Replace with your actual DynamoDB table name from state-backend output
+    dynamodb_table = "terraform-state-lock-YOUR_ENVIRONMENT"
+    
+    # Enable encryption
+    encrypt = true
+  }
+} 

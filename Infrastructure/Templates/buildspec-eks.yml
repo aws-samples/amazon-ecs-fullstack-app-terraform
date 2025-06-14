@@ -1,0 +1,118 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      docker: 20
+    commands:
+      - echo Install kubectl
+      - curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+      - chmod +x kubectl
+      - mv kubectl /usr/local/bin/
+      - echo Install AWS CLI v2
+      - curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+      - unzip awscliv2.zip
+      - ./aws/install --update
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+      - echo Update kubeconfig
+      - aws eks update-kubeconfig --region $AWS_REGION --name $EKS_CLUSTER_NAME
+      - echo Verify kubectl connection
+      - kubectl get nodes
+      - echo Checking for build type
+      - |
+        if expr "${FOLDER_PATH}" : ".*client*" ; then
+          echo "Client build, embedding frontend layer file with server service URL"
+          sed -i "s|<SERVER_ALB_URL>|$SERVER_SERVICE_URL|g" ./client/src/services/RestServices.js
+        else
+          echo "Server build, replacing table name in the server function"
+          sed -i "s|DYNAMODB_TABLE|$DYNAMODB_TABLE|g" ./server/src/app.js
+          echo "Adding Swagger host"
+          sed -i "s|<SERVER_ALB_URL>|$SERVER_SERVICE_URL|g" ./server/src/swagger/swagger.js
+        fi
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the Docker image... 
+      - docker build -t $REPO_URL:$IMAGE_TAG $FOLDER_PATH
+      - docker tag $REPO_URL:$IMAGE_TAG $REPO_URL:latest
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing the Docker image...
+      - docker push $REPO_URL:$IMAGE_TAG
+      - docker push $REPO_URL:latest
+      - echo Preparing Kubernetes manifests
+      - cd ./Infrastructure/Templates
+      - mkdir -p k8s-artifacts
+      - |
+        if expr "${FOLDER_PATH}" : ".*client*" ; then
+          echo "Preparing client Kubernetes manifests"
+          cp k8s-client-deployment.yaml k8s-artifacts/deployment.yaml
+          cp k8s-hpa.yaml k8s-artifacts/hpa.yaml
+          cp k8s-ingress.yaml k8s-artifacts/ingress.yaml
+          # Update client-specific placeholders
+          sed -i "s|<APP_NAME>|$APP_NAME|g" k8s-artifacts/*.yaml
+          sed -i "s|<CONTAINER_NAME>|$CONTAINER_NAME|g" k8s-artifacts/*.yaml
+          sed -i "s|<SERVICE_PORT>|$SERVICE_PORT|g" k8s-artifacts/*.yaml
+          sed -i "s|<REPO_URL>|$REPO_URL:$IMAGE_TAG|g" k8s-artifacts/*.yaml
+          sed -i "s|<AWS_REGION>|$AWS_REGION|g" k8s-artifacts/*.yaml
+          sed -i "s|<PUBLIC_SUBNET_IDS>|$PUBLIC_SUBNET_IDS|g" k8s-artifacts/*.yaml
+          sed -i "s|<ALB_SECURITY_GROUP_ID>|$ALB_SECURITY_GROUP_ID|g" k8s-artifacts/*.yaml
+          # Remove server-specific resources from client HPA
+          sed -i '/<APP_NAME>-server-hpa/,/^---$/d' k8s-artifacts/hpa.yaml
+          # Remove server ingress from client ingress
+          sed -i '/<APP_NAME>-server-ingress/,/^---$/d' k8s-artifacts/ingress.yaml
+        else
+          echo "Preparing server Kubernetes manifests"
+          cp k8s-server-deployment.yaml k8s-artifacts/deployment.yaml
+          cp k8s-hpa.yaml k8s-artifacts/hpa.yaml
+          cp k8s-ingress.yaml k8s-artifacts/ingress.yaml
+          cp k8s-serviceaccount.yaml k8s-artifacts/serviceaccount.yaml
+          # Update server-specific placeholders
+          sed -i "s|<APP_NAME>|$APP_NAME|g" k8s-artifacts/*.yaml
+          sed -i "s|<CONTAINER_NAME>|$CONTAINER_NAME|g" k8s-artifacts/*.yaml
+          sed -i "s|<SERVICE_PORT>|$SERVICE_PORT|g" k8s-artifacts/*.yaml
+          sed -i "s|<REPO_URL>|$REPO_URL:$IMAGE_TAG|g" k8s-artifacts/*.yaml
+          sed -i "s|<AWS_REGION>|$AWS_REGION|g" k8s-artifacts/*.yaml
+          sed -i "s|<DYNAMODB_TABLE>|$DYNAMODB_TABLE|g" k8s-artifacts/*.yaml
+          sed -i "s|<SERVICE_ACCOUNT_NAME>|$SERVICE_ACCOUNT_NAME|g" k8s-artifacts/*.yaml
+          sed -i "s|<EKS_TASK_ROLE_ARN>|$EKS_TASK_ROLE_ARN|g" k8s-artifacts/*.yaml
+          sed -i "s|<AWS_LOAD_BALANCER_CONTROLLER_ROLE_ARN>|$AWS_LOAD_BALANCER_CONTROLLER_ROLE_ARN|g" k8s-artifacts/*.yaml
+          sed -i "s|<PUBLIC_SUBNET_IDS>|$PUBLIC_SUBNET_IDS|g" k8s-artifacts/*.yaml
+          sed -i "s|<ALB_SECURITY_GROUP_ID>|$ALB_SECURITY_GROUP_ID|g" k8s-artifacts/*.yaml
+          # Remove client-specific resources from server HPA
+          sed -i '/<APP_NAME>-client-hpa/,/^---$/d' k8s-artifacts/hpa.yaml
+          # Remove client ingress from server ingress
+          sed -i '/<APP_NAME>-client-ingress/,/^---$/d' k8s-artifacts/ingress.yaml
+        fi
+      - echo Deploying to EKS
+      - cd k8s-artifacts
+      - |
+        if expr "${FOLDER_PATH}" : ".*server*" ; then
+          echo "Deploying ServiceAccount first for server"
+          kubectl apply -f serviceaccount.yaml
+        fi
+      - echo "Deploying application manifests"
+      - kubectl apply -f deployment.yaml
+      - kubectl apply -f hpa.yaml
+      - kubectl apply -f ingress.yaml
+      - echo "Waiting for deployment to be ready"
+      - |
+        if expr "${FOLDER_PATH}" : ".*client*" ; then
+          kubectl rollout status deployment/$APP_NAME-client --timeout=300s
+        else
+          kubectl rollout status deployment/$APP_NAME-server --timeout=300s
+        fi
+      - echo "Deployment completed successfully"
+
+artifacts:
+  files:
+    - '**/*'
+  base-directory: 'Infrastructure/Templates/k8s-artifacts'
+  discard-paths: yes 

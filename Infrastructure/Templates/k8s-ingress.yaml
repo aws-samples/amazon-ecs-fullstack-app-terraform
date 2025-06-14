@@ -1,0 +1,54 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: <APP_NAME>-server-ingress
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: /status
+    alb.ingress.kubernetes.io/healthcheck-port: "3001"
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    alb.ingress.kubernetes.io/subnets: <PUBLIC_SUBNET_IDS>
+    alb.ingress.kubernetes.io/security-groups: <ALB_SECURITY_GROUP_ID>
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: <APP_NAME>-server-service
+            port:
+              number: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: <APP_NAME>-client-ingress
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: /
+    alb.ingress.kubernetes.io/healthcheck-port: "80"
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    alb.ingress.kubernetes.io/subnets: <PUBLIC_SUBNET_IDS>
+    alb.ingress.kubernetes.io/security-groups: <ALB_SECURITY_GROUP_ID>
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: <APP_NAME>-client-service
+            port:
+              number: 80 

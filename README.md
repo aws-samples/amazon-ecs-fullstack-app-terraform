@@ -1,221 +1,291 @@
-# Amazon ECS Demo with fullstack app / DevOps practices / Terraform sample
+# Enterprise-grade DevOps Stack with Amazon EKS
 
-## Table of content
+This repository contains a complete **enterprise-grade DevOps stack** using **Amazon EKS (Kubernetes)** with full CI/CD automation, demonstrating modern containerized application deployment best practices.
 
-   * [Solution overview](#solution-overview)
-   * [General information](#general-information)
-   * [Infrastructure](#infrastructure)
-      * [Infrastructure Architecture](#infrastructure-architecture)
-        * [Infrastructure considerations due to demo proposals](#infrastructure-considerations-due-to-demo-proposals)
-      * [CI/CD Architecture](#ci/cd-architecture)
-      * [Prerequisites](#prerequisites)
-      * [Usage](#usage)
-      * [Autoscaling test](#autoscaling-test)
+## 🏗️ Architecture Overview
+
+This project showcases a complete DevOps pipeline using:
+
+- **Amazon EKS** - Managed Kubernetes service for container orchestration
+- **Terraform** - Infrastructure as Code for reproducible deployments
+- **AWS Load Balancer Controller** - Kubernetes ingress using ALB
+- **Horizontal Pod Autoscaler (HPA)** - Automatic scaling based on CPU/Memory
+- **ECR** - Container image storage
+- **CodePipeline** - CI/CD automation with GitHub integration
+- **CodeBuild** - Build and deployment to Kubernetes
+
+## Table of Contents
+
+   * [What Gets Deployed](#what-gets-deployed)
+   * [Prerequisites](#prerequisites)
+   * [Quick Start](#quick-start)
+   * [Infrastructure Architecture](#infrastructure-architecture)
+   * [CI/CD Architecture](#cicd-architecture)
    * [Application Code](#application-code)
-     * [Client app](#client-app)
-       * [Client considerations due to demo proposal](#client-considerations-due-to-demo-proposals)
-     * [Server app](#server-app)
+   * [Post-Deployment Setup](#post-deployment-setup)
+   * [Monitoring and Scaling](#monitoring-and-scaling)
+   * [Alternative: ECS Deployment](#alternative-ecs-deployment)
    * [Cleanup](#cleanup)
    * [Security](#security)
-   * [License](#license)
-   
 
-## Solution overview
+## What Gets Deployed
 
-This repository contains Terraform code to deploy a solution that is intended to be used to run a demo. It shows how AWS resources can be used to build an architecture that reduces defects while deploying, eases remediation, mitigates deployment risks and improves the flow into production environments while gaining the advantages of a managed underlying infrastructure for containers.
+### AWS Infrastructure:
+- **EKS Cluster** with managed node groups (2-4 nodes)
+- **VPC** with public/private subnets across 2 AZs
+- **ECR Repositories** for Docker images (client + server)
+- **CodePipeline** with GitHub integration
+- **CodeBuild Projects** with kubectl deployment
+- **Application Load Balancers** (via AWS Load Balancer Controller)
+- **DynamoDB Table** for application data
+- **S3 Buckets** for artifacts and assets
+- **IAM Roles** with IRSA (IAM Roles for Service Accounts)
+- **SNS Topic** for notifications
 
-## General information
+### Kubernetes Resources:
+- **Deployments** for client (Vue.js) and server (Node.js) applications
+- **Services** (ClusterIP) for internal communication
+- **Ingress** resources for external access via ALB
+- **HorizontalPodAutoscalers** for automatic scaling
+- **ServiceAccounts** with IAM role bindings
 
-The project has been divided into two parts: 
-- Code: the code for the running application
-    - client: Vue.js code for the frontend application
-    - server: Node.js code for the backend application
-- Infrastructure: contains the Terraform code to deploy the needed AWS resources for the solution
+### Applications:
+- **Frontend**: Vue.js client application with modern UI
+- **Backend**: Node.js API server with Swagger documentation
+- **Database**: DynamoDB integration for data persistence
 
-## Infrastructure
+## Prerequisites
 
-The Infrastructure folder contains the terraform code to deploy the AWS resources. The *Modules* folder has been created to store the Terraform modules used in this project. The *Templates* folder contains the different configuration files needed within the modules. The Terraform state is stored locally in the machine where you execute the terraform commands, but feel free to set a Terraform backend configuration like an AWS S3 Bucket or Terraform Cloud to store the state remotely. The AWS resources created by the script are detailed bellow:
+1. **AWS CLI** configured with appropriate credentials
+2. **Terraform** v0.13+ installed
+3. **kubectl** installed (for cluster management)
+4. **GitHub Personal Access Token** with repo permissions
+5. **Fork this repository** to your GitHub account
 
-- AWS Networking resources, following best practices for HA
-- 2 ECR Repositories
-- 1 ECS Cluster
-- 2 ECS Services
-- 2 Task definitions
-- 4 Autoscaling Policies + Cloudwatch Alarms
-- 2 Application Load Balancer (Public facing)
-- IAM Roles and policies for ECS Tasks, CodeBuild, CodeDeploy and CodePipeline
-- Security Groups for ALBs and ECS tasks
-- 2 CodeBuild Projects
-- 2 CodeDeploy Applications
-- 1 CodePipeline pipeline
-- 2 S3 Buckets (1 used by CodePipeline to store the artifacts and another one used to store assets accessible from within the application)
-- 1 DynamoDB table (used by the application)
-- 1 SNS topic for notifications
+## Quick Start
+
+### 1. Configure AWS Credentials
+```bash
+# Add to ~/.aws/credentials
+[your-profile-name]
+aws_access_key_id = YOUR_ACCESS_KEY
+aws_secret_access_key = YOUR_SECRET_KEY
+```
+
+### 2. Deploy Remote State Backend (Recommended)
+```bash
+cd Infrastructure/state-backend/
+terraform init
+terraform apply -var aws_profile="your-profile" \
+                -var aws_region="us-west-2" \
+                -var environment_name="your-env"
+
+# Configure backend
+cd ../
+cp backend.tf.example backend.tf
+# Edit backend.tf with the S3 bucket and DynamoDB table names
+```
+
+### 3. Deploy EKS Infrastructure
+```bash
+cd Infrastructure/
+
+terraform init
+terraform plan -var aws_profile="your-profile" \
+               -var aws_region="us-west-2" \
+               -var environment_name="your-unique-env-name" \
+               -var github_token="your-github-token" \
+               -var repository_name="your-forked-repo-name" \
+               -var repository_owner="your-github-username"
+
+terraform apply [same variables as above]
+```
+
+### 4. Configure kubectl Access
+```bash
+# Update kubeconfig to access your EKS cluster
+aws eks update-kubeconfig --region us-west-2 --name your-unique-env-name
+
+# Verify access
+kubectl get nodes
+kubectl get pods --all-namespaces
+```
+
+### 5. Install AWS Load Balancer Controller
+```bash
+# Install via Helm (recommended)
+helm repo add eks https://aws.github.io/eks-charts
+helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
+  -n kube-system \
+  --set clusterName=your-unique-env-name \
+  --set serviceAccount.create=false \
+  --set serviceAccount.name=aws-load-balancer-controller
+```
 
 ## Infrastructure Architecture
 
-The following diagram represents the Infrastructure architecture being deployed with this project:
+The following diagram represents the EKS Infrastructure architecture:
 
 <p align="center">
   <img src="Documentation_assets/Infrastructure_architecture.png"/>
 </p>
 
-### Infrastructure considerations due to demo proposals
-The task definition template (Infrastructure/Templates/taskdef.json) that enables the CodePipeline to execute a Blue/Green deployment in ECS has hardcoded values for the memory and CPU values for the server and client application.
+### Remote State Backend Setup
 
-Feel free to change it, by adding for example a set of "sed" commands in CodeBuild (following the ones already provided as example) to replace the values dynamically.
+For production use, remote state storage with DynamoDB locking is included:
 
-Feel free to create a subscriptor for the SNS topic created by this code, in order to get informed of the status of each finished CodeDeploy deployment.
+- **S3 Bucket**: For secure Terraform state storage with encryption and versioning
+- **DynamoDB Table**: For state locking to prevent concurrent modifications
+- **Backend Configuration**: Templates and examples for configuring remote state
+
+The state backend infrastructure is located in `Infrastructure/state-backend/` and should be deployed before the main infrastructure.
 
 ## CI/CD Architecture
 
-The following diagram represents the CI/CD architecture being deployed with this project:
+The following diagram represents the CI/CD architecture:
 
 <p align="center">
   <img src="Documentation_assets/CICD_architecture.png"/>
 </p>
 
-## Prerequisites
-There are general steps that you must follow in order to launch the infrastructure resources.
+### Pipeline Flow:
+1. **Source**: GitHub webhook triggers on push to main branch
+2. **Build**: Parallel CodeBuild projects for client and server
+   - Build Docker images
+   - Push to ECR
+   - Apply Kubernetes manifests using kubectl
+3. **Deploy**: Automatic deployment to EKS cluster
+   - Rolling updates for zero downtime
+   - Health checks via readiness/liveness probes
 
-Before launching the solution please follow the next steps:
-
-1) Install Terraform, use Terraform v0.13 or above. You can visit [this](https://releases.hashicorp.com/terraform/) Terraform official webpage to download it.
-2) Configure the AWS credentials into your machine (~/.aws/credentials). You need to use the following format:
-
-```shell
-    [AWS_PROFILE_NAME]
-    aws_access_key_id = Replace_with_the_correct_access_Key
-    aws_secret_access_key = Replace_with_the_correct_secret_Key
-```
-
-3) Generate a GitHub token. You can follow [this](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) steps to generate it.
-
-## Usage
-
-**1.** Fork this repository and create the GitHub token granting access to this new repository in your account.
-
-**2.** Clone that recently forked repository from your account (not the one from the aws-sample organization) and change the directory to the appropriate one as shown below:
-
-```bash
-cd Infrastructure/
-```
-
-**3.** Run Terraform init to download the providers and install the modules
-
-```shell
-terraform init 
-```
-**4.** Run the terraform plan command, feel free to use a tfvars file to specify the variables.
-You need to set at least the following variables:
-+ **aws_profile** = according to the profiles name in ~/.aws/credentials
-+ **aws_region** = the AWS region in which you want to create the resources
-+ **environment_name** = a unique name used for concatenation to give place to the resources names
-+ **github_token** = your GitHub token, the one generated a few steps above
-+ **repository_name** = your GitHub repository name
-+ **repository_owner** = the owner of the GitHub repository used
-
-```shell
-terraform plan -var aws_profile="your-profile" -var aws_region="your-region" -var environment_name="your-env" -var github_token="your-personal-token" -var repository_name="your-github-repository" -var repository_owner="the-github-repository-owner"
-```
-
-Example of the previous command with replaced dummy values:
-
-```shell
-terraform plan -var aws_profile="development" -var aws_region="eu-central-1" -var environment_name="developmentenv" -var github_token="your-personal-token" -var repository_name="your-github-repository" -var repository_owner="the-github-repository-owner"
-```
- 
-**5.** Review the terraform plan, take a look at the changes that terraform will execute:
-
-```shell
-terraform apply -var aws_profile="your-profile" -var aws_region="your-region" -var environment_name="your-env" -var github_token="your-personal-token" -var repository_name="your-github-repository" -var repository_owner="the-github-repository-owner"
-```
-
-**6.** Once Terraform finishes the deployment, open the AWS Management Console and go to the AWS CodePipeline service. You will see that the pipeline, which was created by this Terraform code, is in progress. Add some files and DynamoDB items as mentioned [here](#client-considerations-due-to-demo-proposals). Once the pipeline finished successfully and the before assets were added, go back to the console where Terraform was executed, copy the *application_url* value from the output and open it in a browser.
-
-**7.** In order to access the also implemented Swagger endpoint, copy the *swagger_endpoint* value from the Terraform output and open it in a browser.
-
-## Autoscaling test
-
-To test how your application will perform under a peak of traffic, a stress test configuration file is provided.
-
-For this stress test [Artillery](https://artillery.io/) is being used. Please be sure to install it following [these](https://artillery.io/docs/guides/getting-started/installing-artillery.html) steps.
-
-Once installed, please change the ALB DNS to the desired layer to test (front/backend) in the **target** attribute, which you can copy from the generated Terraform output, or you can also search it in the AWS Management Console.
-
-To execute it, run the following commands:
-
-*Frontend layer:*
-```bash
-artillery run Code/client/src/tests/stresstests/stress_client.yml
-```
-
-*Backend layer:*
-```bash
-artillery run Code/server/src/tests/stresstests/stress_server.yml
-```
-
-To learn more about Amazon ECS Autoscaling, please take a look to [this](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/service-auto-scaling.html) documentation.
 ## Application Code
 
-### Client app
+### Client App
+The Vue.js frontend application uses modern UI practices and connects to the backend API. In production, it runs on port 80, but locally uses port 3000.
 
-The Client folder contains the code to run the frontend. This code is written in Vue.js and uses the port 80 in the deployed version, but when run localy it uses port 3000.
+### Server App
+The Node.js backend application provides:
+- `/status`: Health check endpoint
+- `/api/getAllProducts`: Main API endpoint returning DynamoDB items
+- `/api/docs`: Swagger API documentation
 
-The application folder structure is separeted in components, views and services, despite the router and the assets.
+## Post-Deployment Setup
 
-### Client considerations due to demo proposals
-1) The assets used by the client application are going to be requested from the S3 bucket created with this code. Please add 3 images to the created S3 bucket.
+### 1. Add Sample Data
+**S3 Assets**: Upload 3 sample images to the created S3 assets bucket
 
-2) The DynamoDB structure used by the client application is the following one:
-
-```shell
-  - id: N (HASH)
-  - path: S
-  - title: S
-```
-Feel free to change the structure as needed. But in order to have full demo experience, please add 3 DynamoDB Items with the specified structure from above. Below is an example.
-
-*Note: The path attribute correspondes to the S3 Object URL of each added asset from the previous step.*
-
-Example of a DynamoDB Item:
-
+**DynamoDB Items**: Add sample items with this structure:
 ```json
 {
-  "id": {
-    "N": "1"
-  },
-  "path": {
-    "S": "https://mybucket.s3.eu-central-1.amazonaws.com/MyImage.jpeg"
-  },
-  "title": {
-    "S": "My title"
-  }
+  "id": {"N": "1"},
+  "path": {"S": "https://your-bucket.s3.region.amazonaws.com/image.jpg"},
+  "title": {"S": "Sample Product"}
 }
 ```
 
-### Server app
+### 2. Access Your Applications
+```bash
+# Get application URLs
+kubectl get ingress
 
-The Server folder contains the code to run the backend. This code is written in Node.js and uses the port 80 in the deployed version, but when run localy it uses port 3001.
+# Monitor deployment
+kubectl get pods
+kubectl get services
+```
 
-Swagger was also implemented in order to document the APIs. The Swagger endpoint is provided as part of the Terraform output, you can grab the output link and access it through a browser.
+## Monitoring and Scaling
 
-The server exposes 3 endpoints:
-- /status: serves as a dummy endpoint to know if the server is up and running. This one is used as the health check endpoint by the AWS ECS resources
-- /api/getAllProducts: main endpoint, which returns all the Items from an AWS DynamoDB table
-- /api/docs: the Swagger endpoint for the API documentation
+### Automatic Scaling
+- **Cluster Autoscaler**: Automatically adds/removes nodes based on demand
+- **HPA**: Scales pods based on CPU/Memory utilization (70% CPU threshold)
+- **Resource Management**: Proper CPU/Memory requests and limits
+
+### Monitoring Commands
+```bash
+# Monitor pod status
+kubectl get pods
+
+# Check HPA status
+kubectl get hpa
+
+# View pod logs
+kubectl logs -f deployment/your-env-server
+
+# Monitor ingress status
+kubectl describe ingress your-env-server-ingress
+```
+
+### Load Testing
+Test your application's scaling with Artillery:
+
+```bash
+# Update stress test files with ingress URLs first
+# Frontend layer:
+artillery run client/src/tests/stresstests/stress_client.yml
+
+# Backend layer:
+artillery run server/src/tests/stresstests/stress_server.yml
+```
+
+## Alternative: ECS Deployment
+
+For teams preferring AWS ECS over Kubernetes, an ECS version is available. The ECS version provides:
+
+- ECS Fargate services instead of Kubernetes pods
+- Blue/Green deployments via CodeDeploy
+- Direct ALB integration without Load Balancer Controller
+- ECS Auto Scaling instead of HPA
+
+**To use ECS instead:**
+1. Check out the `ecs-version` branch or use the legacy files in `Infrastructure/legacy-ecs/`
+2. Follow the original ECS deployment instructions
 
 ## Cleanup
 
-Run the following command if you want to delete all the resources created before:
+```bash
+# Delete Kubernetes resources first
+kubectl delete ingress --all
+kubectl delete service --all
+kubectl delete deployment --all
 
-```shell
-terraform destroy -var aws_profile="your-profile" -var AWS_REGION="your-region" -var environment_name="your-env" -var github_token="your-personal-token" -var repository_name="your-github-repository" - var repository_owner="the-github-repository-owner"
+# Then destroy Terraform infrastructure
+terraform destroy -var aws_profile="your-profile" \
+                  -var aws_region="your-region" \
+                  -var environment_name="your-env" \
+                  -var github_token="your-personal-token" \
+                  -var repository_name="your-github-repository" \
+                  -var repository_owner="the-github-repository-owner"
 ```
 
 ## Security
 
-See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
+### Enterprise Security Features:
+- **RBAC**: Kubernetes Role-Based Access Control
+- **IRSA**: Secure AWS service access without long-lived credentials
+- **Private Subnets**: Worker nodes in private subnets only
+- **Security Groups**: Fine-grained network access control
+- **Encrypted Storage**: S3 and DynamoDB encryption at rest
+- **Network Policies**: Pod-to-pod communication control (extensible)
+
+## Advantages of This EKS Stack
+
+1. **Enterprise-Ready**: Production-grade security and scaling
+2. **Kubernetes Native**: Access to full Kubernetes ecosystem
+3. **Cost Optimized**: Better resource utilization than serverless alternatives
+4. **CI/CD Automation**: Complete GitHub-to-production pipeline
+5. **Infrastructure as Code**: Reproducible, version-controlled infrastructure
+6. **Multi-Environment**: Easy to replicate across dev/staging/prod
+7. **Extensible**: Easy to add monitoring, service mesh, and more
+
+## Next Steps & Extensions
+
+- Add **Istio** service mesh for advanced traffic management
+- Implement **ArgoCD** for GitOps deployment
+- Add **Prometheus + Grafana** for monitoring
+- Set up **Kubernetes Network Policies** for enhanced security
+- Configure **Cluster Autoscaler** for cost optimization
+- Add **Spot Instance** support for further cost savings
+- Implement **Cert-Manager** for automatic SSL certificate management
 
 ## License
 This library is licensed under the MIT-0 License. See the [LICENSE](LICENSE) file.

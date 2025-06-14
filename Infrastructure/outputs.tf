@@ -1,12 +1,29 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
 
-output "application_url" {
-  value       = module.alb_client.dns_alb
-  description = "Copy this value in your browser in order to access the deployed app"
+output "eks_cluster_name" {
+  description = "Name of the EKS cluster"
+  value       = module.eks_cluster.eks_cluster_name
 }
 
-output "swagger_endpoint" {
-  value       = "${module.alb_server.dns_alb}/api/docs"
-  description = "Copy this value in your browser in order to access the swagger documentation"
+output "eks_cluster_endpoint" {
+  description = "Endpoint for EKS control plane"
+  value       = module.eks_cluster.eks_cluster_endpoint
 }
+
+output "codepipeline_url" {
+  description = "CodePipeline URL"
+  value       = "https://console.aws.amazon.com/codesuite/codepipeline/pipelines/${module.codepipeline.codepipeline_name}/view"
+}
+
+output "ecr_repository_server_url" {
+  description = "ECR Repository URL for server"
+  value       = module.ecr_server.ecr_repository_url
+}
+
+output "ecr_repository_client_url" {
+  description = "ECR Repository URL for client"
+  value       = module.ecr_client.ecr_repository_url
+}
+
+# Note: Application URLs will be available after deployment via kubectl get ingress
